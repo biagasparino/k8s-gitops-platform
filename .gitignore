@@ -1,0 +1,34 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*
+secrets.yaml
+*-secret.yaml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.db
+
+# Node
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+
+# Helm / Kubernetes
+*.tgz
+charts/*.tgz
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp

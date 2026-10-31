@@ -1,0 +1,24 @@
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New', monospace">
+  <rect width="900" height="400" rx="10" fill="#161b22"/>
+  <rect width="900" height="34" rx="10" fill="#21262d"/>
+  <circle cx="20" cy="17" r="6" fill="#ff5f56"/><circle cx="42" cy="17" r="6" fill="#ffbd2e"/><circle cx="64" cy="17" r="6" fill="#27c93f"/>
+  <text x="450" y="22" text-anchor="middle" fill="#8b949e" font-size="12">kubectl -n tasks-prod get all,hpa,pdb,ingress</text>
+  <g font-size="12.5" fill="#c9d1d9">
+    <text x="20" y="60" fill="#58a6ff">$ kubectl -n tasks-prod get pods,hpa,pdb</text>
+    <text x="20" y="88" fill="#8b949e">NAME                                  READY   STATUS    RESTARTS   AGE</text>
+    <text x="20" y="108">pod/postgres-0                        1/1     Running   0          2d</text>
+    <text x="20" y="126">pod/tasks-backend-6d9c7b8f5-4kq2x     1/1     Running   0          3h</text>
+    <text x="20" y="144">pod/tasks-backend-6d9c7b8f5-9tz7m     1/1     Running   0          3h</text>
+    <text x="20" y="162">pod/tasks-backend-6d9c7b8f5-xw5pl     1/1     Running   0          3h</text>
+    <text x="20" y="180">pod/tasks-frontend-7c5d9f6b4-2mn8r    1/1     Running   0          3h</text>
+    <text x="20" y="198">pod/tasks-frontend-7c5d9f6b4-hj6vd    1/1     Running   0          3h</text>
+    <text x="20" y="216">pod/tasks-frontend-7c5d9f6b4-qk4sc    1/1     Running   0          3h</text>
+    <text x="20" y="250" fill="#8b949e">NAME                    REFERENCE                  TARGETS   MINPODS   MAXPODS   REPLICAS</text>
+    <text x="20" y="270">hpa/tasks-backend       Deployment/tasks-backend   31%/65%   3         10        3</text>
+    <text x="20" y="288">hpa/tasks-frontend      Deployment/tasks-frontend  12%/65%   3         6         3</text>
+    <text x="20" y="322" fill="#8b949e">NAME                    MIN AVAILABLE   ALLOWED DISRUPTIONS</text>
+    <text x="20" y="342">pdb/tasks-backend       2               1</text>
+    <text x="20" y="360">pdb/tasks-frontend      2               1</text>
+    <text x="20" y="384" fill="#3fb950">✔ every Pod passes its readiness probe, none has restarted</text>
+  </g>
+</svg>

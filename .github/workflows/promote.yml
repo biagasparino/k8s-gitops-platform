@@ -1,0 +1,51 @@
+# Promotion = copy the image tag that is already running in one environment to the next
+# one, through a pull request. The PR is the approval step ("Code Review" in the flow).
+name: Promote image tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Source environment
+        type: choice
+        options: [dev, staging]
+        default: dev
+      to:
+        description: Target environment
+        type: choice
+        options: [staging, prod]
+        default: staging
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read tag from source environment
+        id: tag
+        run: |
+          TAG="$(grep -m1 -E '^\s*tag:' gitops/environments/${{ inputs.from }}/values.yaml | sed -E 's/.*tag:\s*"?([^"]+)"?.*/\1/')"
+          echo "value=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Promoting ${TAG} from ${{ inputs.from }} to ${{ inputs.to }}"
+
+      - name: Open a pull request that updates the target environment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="promote/${{ inputs.to }}-${{ steps.tag.outputs.value }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          sed -i -E "s/^(\s*tag:\s*).*/\1\"${{ steps.tag.outputs.value }}\"/" gitops/environments/${{ inputs.to }}/values.yaml
+          git add gitops/environments/${{ inputs.to }}/values.yaml
+          git commit -m "chore(${{ inputs.to }}): promote ${{ steps.tag.outputs.value }} from ${{ inputs.from }}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Promote ${{ steps.tag.outputs.value }} to ${{ inputs.to }}" \
+            --body "Promotes image tag \`${{ steps.tag.outputs.value }}\` from **${{ inputs.from }}** to **${{ inputs.to }}**. Merging this PR is what lets ArgoCD deploy it." \
+            --base main --head "$BRANCH"

@@ -1,0 +1,15 @@
+tasks-platform {{ .Chart.Version }} installed in namespace "{{ .Release.Namespace }}" (environment: {{ .Values.environment }}).
+
+Check the rollout:
+  kubectl -n {{ .Release.Namespace }} get deploy,sts,hpa,pdb,ingress
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/tasks-backend
+
+{{- if .Values.ingress.enabled }}
+
+Open the app:
+{{- if .Values.ingress.host }}
+  http://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl -n {{ .Release.Namespace }} get ingress tasks   # use the ADDRESS shown there
+{{- end }}
+{{- end }}

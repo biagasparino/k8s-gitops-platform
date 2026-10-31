@@ -1,0 +1,23 @@
+# Local overrides for `helm install` on a kind cluster (no ALB, no metrics-server, local images).
+environment: local
+
+namespace:
+  create: false          # the script creates the namespace; Helm must not fight over it
+
+backend:
+  image: { repository: tasks-backend, tag: local, pullPolicy: Never }
+  autoscaling: { enabled: false }
+  replicas: 2
+frontend:
+  image: { repository: tasks-frontend, tag: local, pullPolicy: Never }
+  autoscaling: { enabled: false }
+  replicas: 2
+
+database:
+  existingSecret: tasks-db-credentials
+
+ingress:
+  className: nginx
+
+networkPolicy:
+  enabled: false         # kind's default CNI does not enforce NetworkPolicy

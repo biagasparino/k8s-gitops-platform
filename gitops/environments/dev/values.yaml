@@ -1,0 +1,35 @@
+# DEV — deployed automatically by ArgoCD on every change (auto-sync + self-heal).
+# CI rewrites the two "tag" lines below after building new images.
+environment: dev
+
+backend:
+  image:
+    tag: "latest"
+  autoscaling: { enabled: true, minReplicas: 1, maxReplicas: 3, targetCPUUtilizationPercentage: 70 }
+  pdb: { enabled: false }          # one replica + minAvailable 1 would block node drains
+
+frontend:
+  image:
+    tag: "latest"
+  autoscaling: { enabled: true, minReplicas: 1, maxReplicas: 2, targetCPUUtilizationPercentage: 70 }
+  pdb: { enabled: false }
+
+database:
+  existingSecret: tasks-db-credentials   # created by scripts/create-db-secret.sh, never stored in Git
+
+ingress:
+  className: alb
+  host: ""                               # e.g. tasks-dev.example.com
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+  backendServiceAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /health/ready
+  frontendServiceAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+
+networkPolicy:
+  ingressFrom:
+    - ipBlock:
+        cidr: 192.168.0.0/16   # eksctl default VPC CIDR: the ALB reaches pods from inside the VPC

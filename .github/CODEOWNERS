@@ -1,0 +1,4 @@
+# Anything that changes what runs in production needs an owner's review.
+/gitops/environments/prod/  @biagasparino
+/helm/                      @biagasparino
+/gitops/argocd/             @biagasparino

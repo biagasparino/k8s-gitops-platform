@@ -1,0 +1,8 @@
+apiVersion: v2
+name: tasks-platform
+description: React + FastAPI + PostgreSQL on Kubernetes (Deployments, Services, Ingress, HPA, PDB, RBAC, NetworkPolicy)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.28.0-0"
+keywords: [kubernetes, gitops, fastapi, react, postgresql]

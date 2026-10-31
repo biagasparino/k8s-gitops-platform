@@ -1,0 +1,100 @@
+# Default values. Per-environment overrides live in gitops/environments/<env>/values.yaml
+# (that is where CI writes the image tag that ArgoCD then deploys).
+
+environment: dev
+
+# ---------------------------------------------------------------- Namespace
+namespace:
+  create: true            # the chart owns the Namespace (with Pod Security labels)
+  podSecurity:
+    enforce: restricted   # pods that violate "restricted" are rejected at admission
+    warn: restricted
+
+# ------------------------------------------------------------------ Images
+backend:
+  replicas: 2
+  image:
+    repository: ghcr.io/biagasparino/tasks-backend
+    tag: latest           # overwritten with the commit SHA by CI
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    enabled: true
+    minAvailable: 1
+  logLevel: INFO
+
+frontend:
+  replicas: 2
+  image:
+    repository: ghcr.io/biagasparino/tasks-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8080
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 200m, memory: 128Mi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+imagePullSecrets: []
+
+# ---------------------------------------------------------------- Database
+database:
+  host: ""                # empty -> the in-cluster PostgreSQL StatefulSet below
+  port: 5432
+  name: tasks
+  # Credentials. Either let the chart create a Secret from the values below (dev only!),
+  # or point to a Secret created out-of-band (existingSecret) with keys: username, password.
+  existingSecret: ""
+  username: tasks_user
+  password: ""            # never commit a real password; leave empty and use existingSecret
+
+postgres:
+  enabled: true           # set to false when using Amazon RDS
+  image: postgres:16-alpine
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+  storage:
+    size: 5Gi
+    storageClassName: ""  # "" = cluster default (gp3 on EKS, standard on kind)
+
+# ----------------------------------------------------------------- Ingress
+ingress:
+  enabled: true
+  className: nginx        # "alb" on EKS (AWS Load Balancer Controller)
+  host: ""                # e.g. tasks.example.com; empty = match any host
+  annotations: {}
+  # Service-level annotations (the ALB controller reads health checks from the Service)
+  backendServiceAnnotations: {}
+  frontendServiceAnnotations: {}
+
+# -------------------------------------------------------------------- RBAC
+rbac:
+  create: true
+  # Group that gets read-only access to this namespace (map it to an IAM role via EKS access entries)
+  developersGroup: tasks-developers
+
+# ----------------------------------------------------------- NetworkPolicy
+networkPolicy:
+  enabled: true
+  # Who may reach the frontend/backend pods. Default: the ingress-nginx namespace (kind / local).
+  # On EKS with the ALB (target-type: ip) traffic comes from the VPC, so use an ipBlock instead.
+  ingressFrom:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx

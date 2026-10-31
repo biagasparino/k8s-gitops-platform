@@ -1,0 +1,44 @@
+# Local stack that mirrors the Kubernetes topology: web -> api -> postgres.
+# (Kubernetes uses an Ingress to route "/" to the frontend and "/api" to the backend;
+#  here the frontend nginx simply proxies /api to the API container.)
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tasks
+      POSTGRES_USER: tasks_user
+      POSTGRES_PASSWORD: change_me
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasks_user -d tasks"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./app/backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: tasks
+      DB_USER: tasks_user
+      DB_PASSWORD: change_me
+      APP_VERSION: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  web:
+    build: ./app/frontend
+    depends_on:
+      - api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/nginx-compose.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  pgdata:

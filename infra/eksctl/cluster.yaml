@@ -1,0 +1,45 @@
+# Creates the EKS cluster:  eksctl create cluster -f infra/eksctl/cluster.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: tasks-eks
+  region: us-east-1
+  version: "1.31"
+  tags:
+    project: k8s-gitops-platform
+    managed-by: eksctl
+
+# OIDC provider -> lets Kubernetes service accounts assume IAM roles (IRSA),
+# which is how the AWS Load Balancer Controller and the EBS CSI driver get AWS permissions.
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: workers
+    instanceType: t3.medium
+    minSize: 2
+    desiredCapacity: 2
+    maxSize: 4
+    volumeSize: 30
+    privateNetworking: true   # nodes live in private subnets; only the ALB is public
+    labels: { role: workers }
+
+addons:
+  - name: vpc-cni
+    configurationValues: '{"enableNetworkPolicy": "true"}'   # enforces the NetworkPolicies in the chart
+  - name: coredns
+  - name: kube-proxy
+  - name: metrics-server                                     # required by the HPA
+  - name: aws-ebs-csi-driver                                 # provisions the PostgreSQL volume (gp3)
+    wellKnownPolicies:
+      ebsCSIController: true
+
+# Map an IAM role to the Kubernetes group used by the read-only Role in the Helm chart.
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+  accessEntries:
+    - principalARN: arn:aws:iam::<ACCOUNT_ID>:role/tasks-developers   # <- replace with your IAM role
+      type: STANDARD
+      kubernetesGroups:
+        - tasks-developers

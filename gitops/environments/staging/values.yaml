@@ -1,0 +1,32 @@
+# STAGING — auto-synced; images are promoted here from dev through a pull request.
+environment: staging
+
+backend:
+  image:
+    tag: "latest"
+  autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 70 }
+
+frontend:
+  image:
+    tag: "latest"
+  autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 3, targetCPUUtilizationPercentage: 70 }
+
+database:
+  existingSecret: tasks-db-credentials
+
+ingress:
+  className: alb
+  host: ""                               # e.g. tasks-staging.example.com
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+  backendServiceAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /health/ready
+  frontendServiceAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+
+networkPolicy:
+  ingressFrom:
+    - ipBlock:
+        cidr: 192.168.0.0/16

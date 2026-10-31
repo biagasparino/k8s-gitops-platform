@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tasks
+  namespace: argocd
+spec:
+  description: Tasks platform (React + FastAPI + PostgreSQL)
+  # Guard rails: this project may only deploy from this repo, into these namespaces.
+  sourceRepos:
+    - https://github.com/biagasparino/k8s-gitops-platform.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: tasks-dev }
+    - { server: https://kubernetes.default.svc, namespace: tasks-staging }
+    - { server: https://kubernetes.default.svc, namespace: tasks-prod }
+  # The only cluster-scoped kind it may create is a Namespace (the chart owns its namespace).
+  clusterResourceWhitelist:
+    - { group: "", kind: Namespace }
+  namespaceResourceWhitelist:
+    - { group: "*", kind: "*" }
+  roles:
+    - name: readonly
+      description: Read-only access for developers
+      policies:
+        - p, proj:tasks:readonly, applications, get, tasks/*, allow
+      groups:
+        - tasks-developers

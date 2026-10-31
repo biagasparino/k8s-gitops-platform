@@ -1,0 +1,40 @@
+{{- if .Values.rbac.create }}
+# Read-only access to this namespace for developers: they can look, not touch.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tasks-developer-readonly
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tasks.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "configmaps", "events", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  # Deliberately absent: secrets, and any create/update/delete verb.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tasks-developer-readonly
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tasks.labels" . | nindent 4 }}
+subjects:
+  - kind: Group
+    name: {{ .Values.rbac.developersGroup }}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: tasks-developer-readonly
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

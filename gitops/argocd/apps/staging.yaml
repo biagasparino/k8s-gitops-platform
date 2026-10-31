@@ -1,0 +1,29 @@
+# STAGING: fully automated sync (prune + self-heal).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tasks-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tasks
+  source:
+    repoURL: https://github.com/biagasparino/k8s-gitops-platform.git
+    targetRevision: main
+    path: helm/tasks-platform
+    helm:
+      valueFiles:
+        - ../../gitops/environments/staging/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tasks-staging
+  syncPolicy:
+    automated:
+      prune: true        # delete resources that were removed from Git
+      selfHeal: true     # revert manual kubectl edits back to what Git says
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }
